@@ -1,8 +1,8 @@
+import streamlit as st
 import easyocr
 import numpy as np
 import cv2
 from PIL import Image
-import gradio as gr
 import tempfile
 import os
 
@@ -81,12 +81,24 @@ def process_video(video_file_path):
     except Exception as e:
         return None, f"Error processing video: {str(e)}"
 
-# Create Gradio interface
-iface = gr.Interface(
-    fn=process_video,
-    inputs=gr.Video(),  # Input video file
-    outputs=[gr.Video(), gr.Textbox()]  # Output video file and detected text
-)
+# Streamlit interface
+st.title("Video Text Detection with EasyOCR")
 
-# Launch the interface
-iface.launch()
+uploaded_file = st.file_uploader("Choose a video file", type=["mp4", "avi"])
+
+if uploaded_file is not None:
+    # Save the uploaded file to a temporary location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
+        temp_file.write(uploaded_file.read())
+        temp_file_path = temp_file.name
+
+    st.video(uploaded_file, format="video/mp4")
+
+    with st.spinner('Processing video...'):
+        output_path, detected_texts = process_video(temp_file_path)
+        
+        if output_path:
+            st.video(output_path, format="video/avi")
+            st.text_area("Detected Text", detected_texts, height=300)
+        else:
+            st.error(detected_texts)  # Display error message if there is an issue
